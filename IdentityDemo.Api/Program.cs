@@ -3,8 +3,35 @@ using Microsoft.Identity.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication("Smart")
+    .AddPolicyScheme("Smart", "Entra or Auth0", options =>
+    {
+        options.ForwardDefaultSelector = context =>
+        {
+            var header = context.Request.Headers.Authorization.ToString();
+            if (header.StartsWith("Bearer "))
+            {
+                var token = header.Substring("Bearer ".Length);
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                if (handler.CanReadToken(token))
+                {
+                    var issuer = handler.ReadJwtToken(token).Issuer;
+                    if (issuer.Contains("auth0.com"))
+                        return "Auth0";
+                }
+            }
+            return JwtBearerDefaults.AuthenticationScheme;
+        };
+    })
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.AddAuthentication()
+    .AddJwtBearer("Auth0", options =>
+    {
+        options.Authority = builder.Configuration["Auth0:Authority"];
+        options.Audience = builder.Configuration["Auth0:Audience"];
+    });
+
 builder.Services.AddAuthorization();
 
 // Add services to the container.
