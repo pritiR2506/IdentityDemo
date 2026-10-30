@@ -37,4 +37,4 @@ jobs:
           context: .
           file: IdentityDemo.Api/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/identitydemo-api:latest
+          tags: ghcr.io/pritir2506/identitydemo-api:latest
