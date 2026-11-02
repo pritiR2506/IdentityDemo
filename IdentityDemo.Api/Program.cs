@@ -40,31 +40,36 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton(sp =>
 {
     var cfg = builder.Configuration.GetSection("Cosmos");
-    return new CosmosClient(cfg["Endpoint"], cfg["Key"], new CosmosClientOptions
-    {
-        ConnectionMode = ConnectionMode.Gateway,
-        LimitToEndpoint = true,
-        HttpClientFactory = () => new HttpClient(new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        })
-    });
-});
 
+    return new CosmosClient(
+        cfg["Endpoint"]!,
+        cfg["Key"]!,
+        new CosmosClientOptions
+        {
+            ConnectionMode = ConnectionMode.Gateway,
+            LimitToEndpoint = true
+        });
+});
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (!string.IsNullOrEmpty(app.Configuration["Cosmos:Endpoint"]))
 {
-    var client = scope.ServiceProvider.GetRequiredService<CosmosClient>();
-    var db = await client.CreateDatabaseIfNotExistsAsync("IdentityDemo");
-    await db.Database.CreateContainerIfNotExistsAsync("Items", "/id");
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var client = scope.ServiceProvider.GetRequiredService<CosmosClient>();
+        var db = await client.CreateDatabaseIfNotExistsAsync("IdentityDemo");
+        await db.Database.CreateContainerIfNotExistsAsync("Items", "/id");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Cosmos setup skipped");
+    }
 }
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -115,6 +120,8 @@ app.MapGet("/items/{id}", async (string id, CosmosClient client, IConfiguration 
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok("healthy"));
 
 app.Run();
 

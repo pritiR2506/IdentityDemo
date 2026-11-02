@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: identitydemo-config
+data:
+  AzureAd__Instance: "https://login.microsoftonline.com/"
+  AzureAd__TenantId: "27130e07-b4a0-432a-afb4-4a57a9224fa8"
+  AzureAd__ClientId: "31e622a6-d7e2-44fb-b1f8-957f8631b76b"
+  AzureAd__Audience: "api://31e622a6-d7e2-44fb-b1f8-957f8631b76b"
+  Auth0__Authority: "https://dev-48lnp0hqgq0fxtsb.us.auth0.com/"
+  Auth0__Audience: "https://identitydemo-api"
